@@ -48,12 +48,12 @@ This decrypts `encrypted` using the RSA private key and output a file called `de
 
 ### **Encrypt a String**
 ```sh
-encrypt -i text public_key.pem "Hello, World!"
+cribto encrypt -i text public_key.pem "Hello, World!"
 ```
 
 ### **Decrypt a String**
 ```sh
-encrypt -i text private_key.pem "<encrypted_text>"
+cribto encrypt -i text private_key.pem "<encrypted_text>"
 ```
 
 ## 📜 License
