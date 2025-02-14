@@ -36,24 +36,24 @@ This creates `private_key.pem` and `public_key.pem` in the current directory.
 
 ### **Encrypt a File**
 ```sh
-cribto encrypt -i secret.txt -o encrypted.bin -k public_key.pem
+cribto encrypt public_key.pem secret.txt
 ```
-This encrypts `secret.txt` using the RSA public key.
+This encrypts `secret.txt` using the RSA public key and output a file called `encrypted`.
 
 ### **Decrypt a File**
 ```sh
-cribto decrypt -i encrypted.bin -o decrypted.txt -k private_key.pem
+cribto decrypt private_key.pem encrypted
 ```
-This decrypts `encrypted.bin` using the RSA private key.
+This decrypts `encrypted` using the RSA private key and output a file called `decrypted`.
 
 ### **Encrypt a String**
 ```sh
-echo "Hello, world!" | cribto encrypt -k public_key.pem
+encrypt -i text public_key.pem "Hello, World!"
 ```
 
 ### **Decrypt a String**
 ```sh
-echo "<encrypted_string>" | cribto decrypt -k private_key.pem
+encrypt -i text private_key.pem "<encrypted_text>"
 ```
 
 ## 📜 License
