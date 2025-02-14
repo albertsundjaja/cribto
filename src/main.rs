@@ -3,7 +3,7 @@ use clap::{
     Subcommand,
     ValueEnum,
 };
-use cribtic::rsa2048::RSA2048;
+use cribto::rsa2048::RSA2048;
 use std::fs;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 
