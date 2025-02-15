@@ -3,7 +3,7 @@ use clap::{
     Subcommand,
     ValueEnum,
 };
-use cribto::rsa2048::RSA2048;
+use cribto::{chacha20poly1305::ChaCha20Poly1305, rsa4096::RSA4096, traits::CryptoAlgorithm};
 use std::fs;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 
@@ -46,7 +46,12 @@ enum Commands {
     },
 
     /// Generate an encryption key
-    Generate,
+    Generate {
+        #[arg(long, short, value_enum)]
+        algo_type: Option<AlgoType>, // Crypto algorithm, if not provided, X25519 is assumed
+        #[arg(long, short, value_enum)]
+        output_type: Option<OutputType>, // File path or text, if not provided, file is assumed
+    },
 }
 
 #[derive(Clone, ValueEnum)]
@@ -63,8 +68,9 @@ enum KeyType {
 
 #[derive(Clone, ValueEnum)]
 enum AlgoType {
-    RSA2048,
+    RSA4096,
     X25519,
+    CHACHA20,
 }
 
 #[derive(Clone, ValueEnum)]
@@ -96,7 +102,10 @@ fn main() {
                     key = raw_key.as_bytes().to_vec();
                 }
             }
-            let encrypted = RSA2048::encrypt(&key, &input).expect("Failed to encrypt");
+
+            let algo = get_algo(algo_type);
+            let encrypted = algo.encrypt(&key, &input).expect("Failed to encrypt");
+
             let encoded = STANDARD.encode(&encrypted);
             match output_type {
                 Some(OutputType::Text) => {
@@ -126,7 +135,10 @@ fn main() {
                     key = raw_key.as_bytes().to_vec();
                 }
             }
-            let decrypted = RSA2048::decrypt(&key, &input).expect("Failed to decrypt");
+
+            let algo = get_algo(algo_type);
+            let decrypted = algo.decrypt(&key, &input).expect("Failed to decrypt");
+
             match output_type {
                 Some(OutputType::Text) => {
                     println!("{}", String::from_utf8(decrypted).expect("Failed to convert to string"));
@@ -136,8 +148,9 @@ fn main() {
                 }
             }
         }
-        Some(Commands::Generate) => {
-            let (private, public) = RSA2048::generate_key_pair();
+        Some(Commands::Generate{algo_type, output_type}) => {
+            let algo = get_algo(algo_type);
+            let (private, public) = algo.generate_key_pair();
             fs::write("private_key.pem", &private).expect("Failed to write private key");
             fs::write("public_key.pem", &public).expect("Failed to write public key");
         }
@@ -145,4 +158,13 @@ fn main() {
             println!("Invalid command")
         }
     };
+}
+
+fn get_algo(algo_type: &Option<AlgoType>) -> Box<dyn CryptoAlgorithm> {
+    match algo_type {
+        Some(AlgoType::X25519) => Box::new(RSA4096{}),
+        Some(AlgoType::RSA4096) => Box::new(RSA4096{}),
+        Some(AlgoType::CHACHA20) => Box::new(ChaCha20Poly1305{}),
+        _ => Box::new(RSA4096{})
+    }
 }
