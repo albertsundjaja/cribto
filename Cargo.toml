@@ -8,7 +8,10 @@ name = "cribto"
 path = "src/lib.rs"
 
 [dependencies]
+argon2 = "0.5.3"
 base64 = "0.22.1"
+chacha20poly1305 = "0.10.1"
 clap = { version = "4.5.29", features = ["derive"] }
 rand = "0.8.5"
 rsa = { version = "0.9.7" }
+thiserror = "2.0.11"

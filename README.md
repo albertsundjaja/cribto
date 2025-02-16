@@ -4,9 +4,9 @@
 
 ## 🚀 Features
 
-- 🔑 **Generate RSA Key Pairs** (2048-bit)
-- 🔒 **Encrypt Data** with RSA Public Key
-- 🔓 **Decrypt Data** with RSA Private Key
+- 🔑 **Generate RSA Key Pairs** (4096-bit)
+- 🔒 **Encrypt Data** with RSA Public Key or Password (argon2)
+- 🔓 **Decrypt Data** with RSA Private Key or Password (argon2)
 - 📂 **Support for File & Text Encryption**
 - 🦀 **Built with Rust for High Performance & Security**
 - more features coming soon
