@@ -47,7 +47,7 @@ enum Commands {
     /// Generate an encryption key
     Generate {
         #[arg(long, short, value_enum)]
-        algo_type: Option<AlgoType>, // Crypto algorithm, if not provided, X25519 is assumed
+        algo_type: Option<AlgoType>, // Crypto algorithm, if not provided, RSA4096 is assumed
         #[arg(long, short, value_enum)]
         output_type: Option<OutputType>, // File path or text, if not provided, file is assumed
     },
@@ -59,7 +59,7 @@ enum InputType {
     Text,
 }
 
-#[derive(Clone, ValueEnum)]
+#[derive(Clone, ValueEnum, Debug)]
 enum KeyType {
     Password, // Whether the input is a password text
     Key,      // Whether the input is a key
@@ -95,7 +95,7 @@ fn main() {
                     encrypt_kdf(raw_key, raw_input, input_type, algo_type, key_type, output_type);
                 }
                 _ => {
-                    unimplemented!("key type not yet implemented");
+                    encrypt_key(raw_key, raw_input, input_type, algo_type, key_type, output_type);
                 }
             }
         }
@@ -112,7 +112,7 @@ fn main() {
                     decrypt_kdf(raw_key, raw_input, input_type, algo_type, key_type, output_type);
                 }
                 _ => {
-                    unimplemented!("key type not yet implemented");
+                    decrypt_key(raw_key, raw_input, input_type, algo_type, key_type, output_type);
                 }
             }
         }
@@ -120,6 +120,12 @@ fn main() {
             algo_type,
             output_type,
         }) => {
+            let algo_type = match algo_type {
+                Some(AlgoType::X25519) => &Some(AlgoType::X25519),
+                Some(AlgoType::RSA4096) => &Some(AlgoType::RSA4096),
+                Some(AlgoType::CHACHA20) => &Some(AlgoType::CHACHA20),
+                _ => &Some(AlgoType::RSA4096),
+            };
             let algo = get_algo(algo_type);
             let (private, public) = algo.generate_key_pair();
             fs::write("private_key.pem", &private).expect("Failed to write private key");
@@ -143,6 +149,26 @@ fn encrypt_kdf(raw_key: &str, raw_input: &str, input_type: &Option<InputType>, a
     match output_type {
         Some(OutputType::Text) => {
             println!("{}", encrypted);
+        }
+        _ => {
+            fs::write("encrypted", &encrypted).expect("Failed to write encrypted file");
+        }
+    }
+}
+
+fn encrypt_key(raw_key: &str, raw_input: &str, input_type: &Option<InputType>, algo_type: &Option<AlgoType>, key_type: &Option<KeyType>, output_type: &Option<OutputType>) {
+    let input = get_input(input_type, raw_input);
+    let key = get_key(key_type, raw_key, "");
+
+    let algo = get_algo(algo_type);
+    let encrypted = algo.encrypt(&key, &input).expect("Failed to encrypt");
+
+    match output_type {
+        Some(OutputType::Text) => {
+            println!(
+                "{}",
+                String::from_utf8(encrypted).expect("Failed to convert to string")
+            );
         }
         _ => {
             fs::write("encrypted", &encrypted).expect("Failed to write encrypted file");
@@ -179,6 +205,26 @@ fn decrypt_kdf(raw_key: &str, raw_input: &str, input_type: &Option<InputType>, a
     }
 }
 
+fn decrypt_key(raw_key: &str, raw_input: &str, input_type: &Option<InputType>, algo_type: &Option<AlgoType>, key_type: &Option<KeyType>, output_type: &Option<OutputType>) {
+    let input = get_input(input_type, raw_input);
+    let key = get_key(key_type, raw_key, "");
+
+    let algo = get_algo(algo_type);
+    let decrypted = algo.decrypt(&key, &input).expect("Failed to decrypt");
+
+    match output_type {
+        Some(OutputType::Text) => {
+            println!(
+                "{}",
+                String::from_utf8(decrypted).expect("Failed to convert to string")
+            );
+        }
+        _ => {
+            fs::write("decrypted", &decrypted).expect("Failed to write decrypted file");
+        }
+    }
+}
+
 /// Get the input based on the input type.
 fn get_input(input_type: &Option<InputType>, raw_input: &str) -> Vec<u8> {
     match input_type {
@@ -187,15 +233,11 @@ fn get_input(input_type: &Option<InputType>, raw_input: &str) -> Vec<u8> {
     }
 }
 
-/// Get the key (and optionally a salt) based on the key type.
+/// Get or create the key based on the key type.
 fn get_key(key_type: &Option<KeyType>, raw_key: &str, salt: &str) -> Vec<u8> {
     match key_type {
         Some(KeyType::Key) => {fs::read(raw_key).expect("Failed to read key")}
-        _ => {
-            let derived_key =
-                argon2::create_key(raw_key.as_bytes(), salt).expect("Failed to create key");
-                derived_key.key.expect("Failed to get key")
-        }
+        _ => {argon2::create_key(raw_key.as_bytes(), salt).expect("Failed to create key")}
     }
 }
 

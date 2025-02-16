@@ -8,6 +8,3 @@ pub mod chacha20poly1305;
 
 #[path = "kdf/argon2.rs"]
 pub mod argon2;
-
-#[path = "kdf/key.rs"]
-pub mod key;
